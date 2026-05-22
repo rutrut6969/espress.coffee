@@ -8,10 +8,10 @@ export default async function FulfillmentQueuePage() {
   await requireRole(["FULFILLMENT"]);
   const orders = (await getOrdersForDashboard()).filter((order) => !["SHIPPED", "DELIVERED", "CANCELED", "REFUNDED"].includes(String(order.fulfillmentStatus)));
   return (
-    <PortalShell title="Fulfillment queue" eyebrow="Packaging work" links={fulfillmentLinks}>
-      <section className="grid">
+    <PortalShell title="Fulfillment queue" eyebrow="Packaging work" description="Phone-friendly task cards for repackaging, packaging notes, and shipment handoff." links={fulfillmentLinks}>
+      <section className="mobile-card-list">
         {orders.map((order) => (
-          <article className="card card-body" key={order.id}>
+          <article className="data-card task-card" key={order.id}>
             <StatusBadge value={String(order.fulfillmentStatus)} />
             <h3>{order.orderNumber}</h3>
             <p className="muted">{order.customerName} - {order.customerEmail}</p>

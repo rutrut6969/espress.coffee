@@ -19,29 +19,37 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
         <div>
           <Image className="detail-image" src={product.images[0]} alt={product.name} width={1200} height={1200} unoptimized />
           {profile ? (
-            <section className="panel" style={{ marginTop: 18 }}>
+            <section className="coffee-profile-panel">
               <span className="eyebrow">Coffee profile</span>
-              <h2 style={{ color: "var(--espresso)" }}>{profile.roastLevel.replace("_", " ").toLowerCase()} roast</h2>
-              <div className="pill-row">
+              <h2>{profile.roastLevel.replace("_", " ").toLowerCase()} roast</h2>
+              <p className="muted">Built for {profile.recommendedBrewMethods.join(", ")} with a {profile.body.toLowerCase()} body and {profile.acidity.toLowerCase()} acidity.</p>
+              <div className="pill-row flavor-list-expanded">
                 {profile.flavorNotes.map((note) => <span className="pill" key={note}>{note}</span>)}
               </div>
-              <div className="grid stat-grid" style={{ marginTop: 16 }}>
-                <div className="stat card"><span className="muted">Origin</span><strong>{profile.origin ?? "Blend"}</strong></div>
-                <div className="stat card"><span className="muted">Body</span><strong>{profile.body.toLowerCase()}</strong></div>
-                <div className="stat card"><span className="muted">Acidity</span><strong>{profile.acidity.toLowerCase()}</strong></div>
-                <div className="stat card"><span className="muted">Sweetness</span><strong>{profile.sweetness.toLowerCase()}</strong></div>
+              <div className="profile-stat-grid">
+                <div className="profile-stat"><span>Origin</span><strong>{profile.origin ?? "Blend"}</strong></div>
+                <div className="profile-stat"><span>Body</span><strong>{profile.body.toLowerCase()}</strong></div>
+                <div className="profile-stat"><span>Acidity</span><strong>{profile.acidity.toLowerCase()}</strong></div>
+                <div className="profile-stat"><span>Sweetness</span><strong>{profile.sweetness.toLowerCase()}</strong></div>
+              </div>
+              <div className="pill-row brew-methods">
+                {profile.recommendedBrewMethods.map((method) => <span className="status-badge status-badge-success" key={method}>{method}</span>)}
               </div>
             </section>
           ) : null}
         </div>
 
-        <aside className="commerce-box">
+        <aside className="commerce-box product-purchase-card">
           <span className="eyebrow">{product.category.replace("_", " ").toLowerCase()}</span>
-          <h1 style={{ color: "var(--espresso)" }}>{product.name}</h1>
+          <h1>{product.name}</h1>
           <p className="muted">{product.description}</p>
           {product.roaster ? <a className="pill" href={`/roasters/${product.roaster.slug}`}>{product.roaster.name}</a> : <span className="pill">espress.coffee curated</span>}
 
-          <form className="panel" method="post" action="/api/cart">
+          <form className="form-card" method="post" action="/api/cart">
+            <div className="price-line">
+              <strong>From {formatCurrency(product.variants[0]?.retailPriceCents ?? 0)}</strong>
+              <span>{product.variants.length} options</span>
+            </div>
             <input type="hidden" name="productSlug" value={product.slug} />
             <div className="field">
               <label htmlFor="variantId">Package / variant</label>
@@ -78,7 +86,7 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
           <div className="section-header">
             <div>
               <span className="eyebrow">Related</span>
-              <h2 style={{ color: "var(--espresso)" }}>More to try next</h2>
+              <h2>More to try next</h2>
             </div>
           </div>
           <div className="grid product-grid">

@@ -13,14 +13,14 @@ export default async function AdminReportsPage() {
   const topProducts = new Map<string, number>();
   orders.forEach((order) => order.items.forEach((item) => topProducts.set(item.productName, (topProducts.get(item.productName) ?? 0) + item.quantity)));
   return (
-    <PortalShell title="Sales reports" eyebrow="Revenue and profit" links={adminLinks}>
-      <section className="grid stat-grid">
-        <div className="card stat"><span className="muted">Gross sales</span><strong>{formatCurrency(gross)}</strong></div>
-        <div className="card stat"><span className="muted">Platform profit</span><strong>{formatCurrency(profit)}</strong></div>
-        <div className="card stat"><span className="muted">Average order</span><strong>{formatCurrency(average)}</strong></div>
-        <div className="card stat"><span className="muted">Refund totals</span><strong>{formatCurrency(orders.filter((o) => o.paymentStatus === "REFUNDED").reduce((s, o) => s + o.totalCents, 0))}</strong></div>
+    <PortalShell title="Sales reports" eyebrow="Revenue and profit" description="Track gross sales, platform profit, order value, refund exposure, and product demand." links={adminLinks}>
+      <section className="dashboard-grid">
+        <div className="data-card stat"><span className="muted">Gross sales</span><strong>{formatCurrency(gross)}</strong><small>all demo order totals</small></div>
+        <div className="data-card stat"><span className="muted">Platform profit</span><strong>{formatCurrency(profit)}</strong><small>stored margin snapshots</small></div>
+        <div className="data-card stat"><span className="muted">Average order</span><strong>{formatCurrency(average)}</strong><small>gross order average</small></div>
+        <div className="data-card stat"><span className="muted">Refund totals</span><strong>{formatCurrency(orders.filter((o) => o.paymentStatus === "REFUNDED").reduce((s, o) => s + o.totalCents, 0))}</strong><small>refunded/canceled exposure</small></div>
       </section>
-      <section className="panel responsive-table">
+      <section className="table-shell responsive-table">
         <table><thead><tr><th>Top product</th><th>Units</th></tr></thead><tbody>{[...topProducts.entries()].map(([name, quantity]) => <tr key={name}><td>{name}</td><td>{quantity}</td></tr>)}</tbody></table>
       </section>
     </PortalShell>

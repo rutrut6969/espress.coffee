@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Coffee, PackageCheck, Sparkles } from "lucide-react";
 import { ProductCard } from "@/components/product-card";
+import { StatusBadge } from "@/components/status-badge";
 import { getCatalogProducts, getRoasters } from "@/lib/catalog";
 
 export default async function HomePage() {
@@ -23,11 +24,16 @@ export default async function HomePage() {
           <p className="lead">
             Independent roasts, flavor-forward discovery, curated brewing tools, and fulfillment workflows built for a polished coffee ecommerce experience.
           </p>
-          <div className="pill-row" style={{ marginTop: 24 }}>
+          <div className="hero-cta-row">
             <Link className="button" href="/market">
-              Shop market <ArrowRight size={18} />
+              Shop the market <ArrowRight size={18} />
             </Link>
-            <Link className="button-secondary" href="/roasters">Meet roasters</Link>
+            <Link className="button-secondary" href="/roasters">Explore roasters</Link>
+          </div>
+          <div className="hero-stat-row">
+            <div><strong>12+</strong><span>coffee profiles</span></div>
+            <div><strong>4</strong><span>partner roasters</span></div>
+            <div><strong>6</strong><span>curated gear picks</span></div>
           </div>
         </div>
       </section>
@@ -47,10 +53,10 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="section" style={{ background: "#fff8ee" }}>
-        <div className="container grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+      <section className="section section-band">
+        <div className="container dashboard-grid">
           {steps.map(({ title, copy, Icon }) => (
-            <div className="panel" key={title}>
+            <div className="data-card step-card" key={title}>
               <Icon size={24} color="#C9823B" />
               <h3>{title}</h3>
               <p className="muted">{copy}</p>
@@ -76,7 +82,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="section" style={{ background: "#f2eadf" }}>
+      <section className="section section-band">
         <div className="container">
           <div className="section-header">
             <div>
@@ -88,7 +94,7 @@ export default async function HomePage() {
           <div className="grid product-grid">
             {roasters.slice(0, 4).map((roaster) => (
               <Link className="card card-body" key={roaster.slug} href={`/roasters/${roaster.slug}`}>
-                <span className="pill">{String(roaster.status).toLowerCase()}</span>
+                <StatusBadge value={String(roaster.status)} />
                 <h3>{roaster.name}</h3>
                 <p className="muted">{roaster.description}</p>
                 <strong>{roaster.city}, {roaster.state}</strong>

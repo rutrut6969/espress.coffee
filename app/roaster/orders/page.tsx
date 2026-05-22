@@ -8,10 +8,10 @@ export default async function RoasterOrdersPage() {
   await requireRole(["ROASTER"]);
   const orders = (await getOrdersForDashboard()).filter((order) => order.items.some((item) => item.roaster));
   return (
-    <PortalShell title="Roaster orders" eyebrow="Item readiness" links={roasterLinks}>
-      <section className="grid">
+    <PortalShell title="Roaster orders" eyebrow="Item readiness" description="Accept, prepare, and mark partner items ready for transfer to espress.coffee fulfillment." links={roasterLinks}>
+      <section className="mobile-card-list">
         {orders.map((order) => (
-          <article className="card card-body" key={order.id}>
+          <article className="data-card task-card" key={order.id}>
             <StatusBadge value={String(order.fulfillmentStatus)} />
             <h3>{order.orderNumber}</h3>
             <p className="muted">{order.items.filter((item) => item.roaster).map((item) => `${item.quantity} x ${item.productName} (${item.variantLabel}) - ${item.roasterStatus}`).join("; ")}</p>

@@ -18,22 +18,22 @@ export default async function AdminDashboardPage() {
   const lowStock = products.flatMap((product) => product.variants).filter((variant) => variant.stockQuantity <= 15).length;
 
   return (
-    <PortalShell title="Admin panel" eyebrow="espress.coffee operations" links={adminLinks}>
-      <section className="grid stat-grid">
+    <PortalShell title="Admin panel" eyebrow="espress.coffee operations" description="Monitor sales, fulfillment, inventory, roaster submissions, and marketplace health from one control room." links={adminLinks}>
+      <section className="dashboard-grid">
         {[
-          ["Total sales", formatCurrency(totalSales)],
-          ["Platform profit", formatCurrency(platformProfit)],
-          ["Total orders", String(orders.length)],
-          ["Pending fulfillment", String(pending)],
-          ["Low inventory", String(lowStock)],
-          ["Products awaiting approval", "3"]
+          ["Total sales", formatCurrency(totalSales), "paid demo orders"],
+          ["Platform profit", formatCurrency(platformProfit), "snapshot margin"],
+          ["Total orders", String(orders.length), "recent activity"],
+          ["Pending fulfillment", String(pending), "needs attention"],
+          ["Low inventory", String(lowStock), "variant alerts"],
+          ["Awaiting approval", "3", "roaster submissions"]
         ].map(([label, value]) => (
-          <div className="card stat" key={label}><span className="muted">{label}</span><strong>{value}</strong></div>
+          <div className="data-card stat" key={label}><span className="muted">{label}</span><strong>{value}</strong><small>{value === "0" ? "clear" : "review"}</small></div>
         ))}
       </section>
-      <section className="panel">
+      <section className="table-shell">
         <div className="section-header">
-          <div><span className="eyebrow">Recent orders</span><h2 style={{ color: "var(--espresso)" }}>Order activity</h2></div>
+          <div><span className="eyebrow">Recent orders</span><h2>Order activity</h2></div>
           <Link className="button-secondary" href="/admin/orders">Manage orders</Link>
         </div>
         <div className="responsive-table">

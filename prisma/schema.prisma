@@ -1,0 +1,363 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+  ROASTER
+  FULFILLMENT
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  INVITED
+}
+
+enum RoasterStatus {
+  PENDING
+  APPROVED
+  SUSPENDED
+  ARCHIVED
+}
+
+enum ProductCategory {
+  COFFEE_BEANS
+  BREWING_EQUIPMENT
+  ACCESSORY
+  BUNDLE
+  GIFT_CARD
+}
+
+enum ProductStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum RoastLevel {
+  LIGHT
+  MEDIUM_LIGHT
+  MEDIUM
+  MEDIUM_DARK
+  DARK
+  ESPRESSO
+}
+
+enum Intensity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum BodyLevel {
+  LIGHT
+  MEDIUM
+  FULL
+}
+
+enum MarkupType {
+  PERCENTAGE
+  FIXED
+}
+
+enum InventoryMode {
+  TRACKED
+  MANUAL
+  UNLIMITED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum FulfillmentStatus {
+  PENDING_PAYMENT
+  PAID
+  AWAITING_ROASTER_SUPPLY
+  READY_FOR_REPACKAGING
+  REPACKAGING
+  REPACKAGED
+  READY_TO_SHIP
+  SHIPPED
+  DELIVERED
+  CANCELED
+  REFUNDED
+}
+
+enum RoasterOrderStatus {
+  NOT_REQUIRED
+  NEW
+  ACCEPTED
+  PREPARING
+  READY_FOR_TRANSFER
+  TRANSFERRED
+}
+
+enum PlacementPage {
+  HOME
+  MARKET
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id               String          @id @default(cuid())
+  email            String          @unique
+  username         String?         @unique
+  passwordHash     String
+  role             UserRole        @default(CUSTOMER)
+  name             String
+  phone            String?
+  status           UserStatus      @default(ACTIVE)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  roasters         Roaster[]
+  carts            Cart[]
+  orders           Order[]         @relation("CustomerOrders")
+  assignedTasks    FulfillmentTask[]
+  auditLogs        AdminAuditLog[]
+  reviews          Review[]
+}
+
+model Roaster {
+  id             String        @id @default(cuid())
+  ownerUserId    String?
+  ownerUser      User?         @relation(fields: [ownerUserId], references: [id])
+  name           String
+  slug           String        @unique
+  description    String
+  businessEmail  String
+  phone          String?
+  website        String?
+  city           String?
+  state          String?
+  status         RoasterStatus @default(PENDING)
+  internalNotes  String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  products       Product[]
+  orderItems     OrderItem[]
+}
+
+model Product {
+  id               String             @id @default(cuid())
+  roasterId        String?
+  roaster          Roaster?            @relation(fields: [roasterId], references: [id])
+  category         ProductCategory
+  name             String
+  slug             String             @unique
+  shortDescription String
+  description      String
+  images           String[]
+  status           ProductStatus       @default(DRAFT)
+  marketVisible    Boolean             @default(false)
+  homepageFeatured Boolean             @default(false)
+  featuredRank     Int?
+  tags             String[]
+  collections      String[]
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  coffeeProfile    CoffeeProfile?
+  variants         ProductVariant[]
+  cartItems        CartItem[]
+  orderItems       OrderItem[]
+  placements       FeaturedPlacement[]
+  reviews          Review[]
+}
+
+model CoffeeProfile {
+  productId              String      @id
+  product                Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  roastLevel             RoastLevel
+  origin                 String?
+  region                 String?
+  beanType               String?
+  processMethod          String?
+  flavorNotes            String[]
+  acidity                Intensity
+  body                   BodyLevel
+  sweetness              Intensity
+  caffeineLevel          String?
+  decaf                  Boolean     @default(false)
+  organic                Boolean?
+  fairTrade              Boolean?
+  recommendedBrewMethods String[]
+  grindOptions           String[]
+}
+
+model ProductVariant {
+  id                 String        @id @default(cuid())
+  productId          String
+  product            Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  label              String
+  sizeOz             Float?
+  sku                String        @unique
+  baseCostCents      Int
+  markupType         MarkupType
+  markupValue        Int
+  retailPriceCents   Int
+  stockQuantity      Int
+  inventoryMode      InventoryMode @default(TRACKED)
+  isAvailable        Boolean       @default(true)
+  weightOz           Float?
+  shippingClass      String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  cartItems          CartItem[]
+  orderItems         OrderItem[]
+}
+
+model Cart {
+  id                 String     @id @default(cuid())
+  userId             String?
+  user               User?      @relation(fields: [userId], references: [id])
+  anonymousSessionId String?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  items              CartItem[]
+
+  @@index([anonymousSessionId])
+}
+
+model CartItem {
+  id                  String         @id @default(cuid())
+  cartId              String
+  cart                Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId           String
+  product             Product        @relation(fields: [productId], references: [id])
+  productVariantId    String
+  productVariant      ProductVariant @relation(fields: [productVariantId], references: [id])
+  quantity            Int
+  selectedGrind       String?
+  priceSnapshotCents  Int
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+}
+
+model Order {
+  id                       String            @id @default(cuid())
+  customerId               String?
+  customer                 User?             @relation("CustomerOrders", fields: [customerId], references: [id])
+  orderNumber              String            @unique
+  paymentStatus            PaymentStatus     @default(PENDING)
+  fulfillmentStatus        FulfillmentStatus @default(PENDING_PAYMENT)
+  subtotalCents            Int
+  shippingCents            Int
+  taxCents                 Int
+  totalCents               Int
+  platformProfitCents      Int
+  customerEmail            String
+  customerName             String
+  shippingAddress          Json
+  stripeCheckoutSessionId  String?
+  stripePaymentIntentId    String?
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @updatedAt
+  items                    OrderItem[]
+  fulfillmentTasks         FulfillmentTask[]
+}
+
+model OrderItem {
+  id                        String             @id @default(cuid())
+  orderId                   String
+  order                     Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId                 String
+  product                   Product            @relation(fields: [productId], references: [id])
+  productVariantId          String
+  productVariant            ProductVariant     @relation(fields: [productVariantId], references: [id])
+  roasterId                 String?
+  roaster                   Roaster?            @relation(fields: [roasterId], references: [id])
+  productName               String
+  variantLabel              String
+  quantity                  Int
+  selectedGrind             String?
+  baseCostCents             Int
+  retailPriceCents          Int
+  platformProfitCents       Int
+  roasterStatus             RoasterOrderStatus @default(NOT_REQUIRED)
+  fulfillmentNotes          String?
+}
+
+model FulfillmentTask {
+  id                 String            @id @default(cuid())
+  orderId            String
+  order              Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  assignedUserId     String?
+  assignedUser       User?             @relation(fields: [assignedUserId], references: [id])
+  status             FulfillmentStatus @default(READY_FOR_REPACKAGING)
+  repackagingStatus  String            @default("NOT_STARTED")
+  trackingCarrier    String?
+  trackingNumber     String?
+  labelUrl           String?
+  notes              String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+}
+
+model FeaturedCollection {
+  id          String              @id @default(cuid())
+  name        String
+  slug        String              @unique
+  page        PlacementPage
+  active      Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  placements  FeaturedPlacement[]
+}
+
+model FeaturedPlacement {
+  id            String             @id @default(cuid())
+  collectionId  String
+  collection    FeaturedCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product            @relation(fields: [productId], references: [id])
+  sectionName   String
+  page          PlacementPage
+  sortOrder     Int
+  startsAt      DateTime?
+  endsAt        DateTime?
+  active        Boolean            @default(true)
+}
+
+model Review {
+  id                    String       @id @default(cuid())
+  userId                String
+  user                  User         @relation(fields: [userId], references: [id])
+  productId             String
+  product               Product      @relation(fields: [productId], references: [id])
+  rating                Int
+  reviewText            String
+  flavorAccuracyRating  Int?
+  status                ReviewStatus @default(PENDING)
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+}
+
+model AdminAuditLog {
+  id          String   @id @default(cuid())
+  adminId     String
+  admin       User     @relation(fields: [adminId], references: [id])
+  action      String
+  route       String
+  targetId    String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+}

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { PortalShell } from "@/components/portal-shell";
 import { roasterLinks } from "@/lib/portal-links";
 import { getCatalogProducts } from "@/lib/catalog";
@@ -13,7 +14,7 @@ export default async function RoasterProductsPage() {
         <div className="grid product-grid">
           {products.map((product) => (
             <article className="card card-body" key={product.id}>
-              <img className="product-image" src={product.images[0]} alt={product.name} />
+              <Image className="product-image" src={product.images[0]} alt={product.name} width={1200} height={900} unoptimized />
               <h3>{product.name}</h3>
               <p className="muted">{product.coffeeProfile?.flavorNotes.join(", ")}</p>
               <div className="pill-row"><button className="button-secondary">Edit</button><button className="button-secondary">Submit for review</button><button className="button-secondary">Archive draft</button></div>

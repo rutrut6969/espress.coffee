@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ShoppingBag } from "lucide-react";
 import { hydrateCart } from "@/lib/cart";
 import { formatCurrency } from "@/lib/pricing";
@@ -34,7 +35,7 @@ export default async function CartPage() {
               {items.map((item) => (
                 <div className="card card-body" key={`${item.productSlug}-${item.variantId}-${item.selectedGrind}`}>
                   <div style={{ display: "grid", gridTemplateColumns: "86px 1fr", gap: 14 }}>
-                    <img src={item.product.images[0]} alt={item.product.name} style={{ width: 86, height: 86, objectFit: "cover", borderRadius: 8 }} />
+                    <Image src={item.product.images[0]} alt={item.product.name} width={86} height={86} unoptimized style={{ width: 86, height: 86, objectFit: "cover", borderRadius: 8 }} />
                     <div>
                       <h3>{item.product.name}</h3>
                       <p className="muted" style={{ margin: 0 }}>{item.variant.label} {item.selectedGrind ? `- ${item.selectedGrind}` : ""}</p>

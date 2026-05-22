@@ -77,9 +77,17 @@ Copy the emitted signing secret into `STRIPE_WEBHOOK_SECRET`. In production, cre
 
 Production deployments should swap test keys for live keys only after the Stripe account and webhook are ready.
 
+The checkout route refuses to redirect to Stripe unless the pending order is saved first. That protects production payments from being collected without a matching espress.coffee order record.
+
 ## Database And Seed Data
 
-Prisma schema lives in `prisma/schema.prisma`. It models users, roasters, products, coffee profiles, variants, carts, orders, order items, fulfillment tasks, featured collections, placements, reviews, and admin audit logs.
+Prisma schema lives in `prisma/schema.prisma`. It models users, roasters, products, coffee profiles, variants, carts, orders, order items, fulfillment tasks, featured collections, placements, reviews, and admin audit logs. The initial migration is checked in under `prisma/migrations`.
+
+For production or Vercel environments, apply checked-in migrations with:
+
+```bash
+npm run prisma:deploy
+```
 
 Seed data is in `prisma/seed.ts` and is intentionally demo-safe. It creates:
 
@@ -114,11 +122,20 @@ The smoke script expects the dev server to be running at `APP_URL` and checks th
 
 1. Push this repository to GitHub.
 2. Import the repo into Vercel.
-3. Add all environment variables in Vercel project settings.
+3. Confirm the project uses the Next.js framework preset. This repo includes `vercel.json` with `.next` as the output directory; remove any Vercel dashboard override that points the output directory to `public`.
 4. Attach a PostgreSQL database such as Vercel Postgres, Neon, Supabase, or RDS.
-5. Run `npm run prisma:deploy` during deployment or from a trusted deployment shell.
-6. Run `npm run db:seed` for demo review environments only.
-7. Configure the production Stripe webhook URL: `https://YOUR_DOMAIN/api/stripe/webhook`.
+5. Add all environment variables in Vercel project settings.
+6. Run `npm run prisma:deploy` during deployment or from a trusted deployment shell.
+7. Run `npm run db:seed` for demo review environments only.
+8. Configure the production Stripe webhook URL: `https://YOUR_DOMAIN/api/stripe/webhook`.
+
+Install or run the Vercel CLI with:
+
+```bash
+npm install -g vercel
+# or
+npx vercel
+```
 
 ## Folder Structure
 
@@ -133,7 +150,7 @@ The smoke script expects the dev server to be running at `APP_URL` and checks th
 
 - Product, stock, shipment, and profile edit buttons currently present safe placeholder controls; persistence endpoints can be expanded from the existing Prisma schema.
 - Refund UI, CSV exports, favorites, reviews moderation, and advanced analytics are prepared conceptually but not fully implemented.
-- Checkout can run in demo mode without Stripe keys; production requires real Stripe and database environment variables.
+- Checkout can run in demo mode without Stripe keys; production payment capture requires real Stripe keys and a reachable database.
 
 ## Acceptance Checklist
 

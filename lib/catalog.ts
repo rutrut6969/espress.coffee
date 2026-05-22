@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { coffeeProducts, coffeeVariants, demoRoasters, gearProducts, grindOptions } from "@/lib/demo-data";
 import { slugify } from "@/lib/slug";
 import { calculatePlatformProfit } from "@/lib/pricing";
+import { hasUsableDatabaseUrl } from "@/lib/runtime";
 
 export type CatalogProduct = {
   id: string;
@@ -134,6 +135,23 @@ export async function getCatalogProducts(params?: {
   roaster?: string;
   q?: string;
 }) {
+  if (!hasUsableDatabaseUrl()) {
+    const filtered = fallbackProducts().filter((product) => {
+      if (params?.category && product.category !== params.category) return false;
+      if (params?.roaster && product.roaster?.slug !== params.roaster) return false;
+      if (params?.roast && product.coffeeProfile?.roastLevel !== params.roast) return false;
+      if (params?.q) {
+        const haystack = [product.name, product.shortDescription, product.roaster?.name, ...(product.coffeeProfile?.flavorNotes ?? [])]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!haystack.includes(params.q.toLowerCase())) return false;
+      }
+      return product.marketVisible;
+    });
+    return filtered;
+  }
+
   try {
     const products = await prisma.product.findMany({
       where: {
@@ -165,6 +183,10 @@ export async function getCatalogProducts(params?: {
 }
 
 export async function getProductBySlug(slug: string) {
+  if (!hasUsableDatabaseUrl()) {
+    return fallbackProducts().find((product) => product.slug === slug) ?? null;
+  }
+
   try {
     return (await prisma.product.findUnique({
       where: { slug },
@@ -176,6 +198,15 @@ export async function getProductBySlug(slug: string) {
 }
 
 export async function getRoasters() {
+  if (!hasUsableDatabaseUrl()) {
+    const products = fallbackProducts();
+    return demoRoasters.map((roaster) => ({
+      ...roaster,
+      id: roaster.slug,
+      products: products.filter((product) => product.roaster?.slug === roaster.slug)
+    }));
+  }
+
   try {
     return await prisma.roaster.findMany({
       include: { products: { where: { marketVisible: true, status: "PUBLISHED" }, include: { variants: true, coffeeProfile: true } } },
@@ -197,6 +228,45 @@ export async function getRoasterBySlug(slug: string) {
 }
 
 export async function getOrdersForDashboard() {
+  if (!hasUsableDatabaseUrl()) {
+    const products = fallbackProducts();
+    return Array.from({ length: 8 }).map((_, index) => {
+      const product = products[index];
+      const variant = product.variants[1] ?? product.variants[0];
+      const base = variant.baseCostCents;
+      const retail = variant.retailPriceCents;
+      const quantity = index % 3 === 0 ? 2 : 1;
+      return {
+        id: `order-${index + 1}`,
+        orderNumber: `EC-100${index + 1}`,
+        paymentStatus: index === 7 ? "REFUNDED" : index === 6 ? "PENDING" : "PAID",
+        fulfillmentStatus: ["PAID", "AWAITING_ROASTER_SUPPLY", "READY_FOR_REPACKAGING", "REPACKAGING", "REPACKAGED", "SHIPPED", "DELIVERED", "REFUNDED"][index],
+        subtotalCents: retail * quantity,
+        shippingCents: 600,
+        taxCents: Math.round(retail * quantity * 0.07),
+        totalCents: retail * quantity + 600 + Math.round(retail * quantity * 0.07),
+        platformProfitCents: calculatePlatformProfit(retail, base) * quantity,
+        customerEmail: index % 2 ? "customer@espress.coffee" : "guest@example.com",
+        customerName: index % 2 ? "Casey Customer" : "Jordan Guest",
+        createdAt: new Date(Date.now() - index * 86400000),
+        items: [
+          {
+            id: `item-${index}`,
+            productName: product.name,
+            variantLabel: variant.label,
+            quantity,
+            selectedGrind: product.category === "COFFEE_BEANS" ? "drip" : null,
+            roasterStatus: product.roaster ? "ACCEPTED" : "NOT_REQUIRED",
+            platformProfitCents: calculatePlatformProfit(retail, base) * quantity,
+            roaster: product.roaster,
+            product
+          }
+        ],
+        fulfillmentTasks: index > 1 ? [{ id: `task-${index}`, status: "READY_FOR_REPACKAGING", repackagingStatus: "QUEUED" }] : []
+      };
+    });
+  }
+
   try {
     return await prisma.order.findMany({
       include: { items: { include: { product: true, roaster: true } }, fulfillmentTasks: true },

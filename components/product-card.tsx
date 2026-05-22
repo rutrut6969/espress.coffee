@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Coffee, PackageCheck } from "lucide-react";
 import { CatalogProduct } from "@/lib/catalog";
 import { formatCurrency } from "@/lib/pricing";
@@ -9,7 +10,7 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
 
   return (
     <Link className="card product-card" href={`/market/${product.slug}`}>
-      <img className="product-image" src={product.images[0]} alt={product.name} />
+      <Image className="product-image" src={product.images[0]} alt={product.name} width={1200} height={900} unoptimized />
       <div className="card-body">
         <div className="pill-row">
           <span className="pill">

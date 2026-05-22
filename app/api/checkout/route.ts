@@ -4,6 +4,7 @@ import { FulfillmentStatus, PaymentStatus } from "@prisma/client";
 import { hydrateCart, cartCookieName } from "@/lib/cart";
 import { prisma } from "@/lib/prisma";
 import { calculatePlatformProfit } from "@/lib/pricing";
+import { hasUsableDatabaseUrl } from "@/lib/runtime";
 
 function orderNumber() {
   return `EC-${Date.now().toString().slice(-7)}`;
@@ -29,39 +30,45 @@ export async function POST(request: Request) {
   );
 
   let orderId = "";
-  try {
-    const created = await prisma.order.create({
-      data: {
-        orderNumber: orderNumber(),
-        customerEmail,
-        customerName,
-        shippingAddress: { raw: shippingAddress },
-        paymentStatus: PaymentStatus.PENDING,
-        fulfillmentStatus: FulfillmentStatus.PENDING_PAYMENT,
-        subtotalCents,
-        shippingCents,
-        taxCents,
-        totalCents,
-        platformProfitCents,
-        items: {
-          create: items.map((item) => ({
-            productId: item.product.id,
-            productVariantId: item.variant.id,
-            roasterId: item.product.roaster?.id ?? null,
-            productName: item.product.name,
-            variantLabel: item.variant.label,
-            quantity: item.quantity,
-            selectedGrind: item.selectedGrind,
-            baseCostCents: item.variant.baseCostCents,
-            retailPriceCents: item.variant.retailPriceCents,
-            platformProfitCents: calculatePlatformProfit(item.variant.retailPriceCents, item.variant.baseCostCents) * item.quantity,
-            roasterStatus: item.product.roaster ? "NEW" : "NOT_REQUIRED"
-          }))
+  let orderPersisted = false;
+  if (hasUsableDatabaseUrl()) {
+    try {
+      const created = await prisma.order.create({
+        data: {
+          orderNumber: orderNumber(),
+          customerEmail,
+          customerName,
+          shippingAddress: { raw: shippingAddress },
+          paymentStatus: PaymentStatus.PENDING,
+          fulfillmentStatus: FulfillmentStatus.PENDING_PAYMENT,
+          subtotalCents,
+          shippingCents,
+          taxCents,
+          totalCents,
+          platformProfitCents,
+          items: {
+            create: items.map((item) => ({
+              productId: item.product.id,
+              productVariantId: item.variant.id,
+              roasterId: item.product.roaster?.id ?? null,
+              productName: item.product.name,
+              variantLabel: item.variant.label,
+              quantity: item.quantity,
+              selectedGrind: item.selectedGrind,
+              baseCostCents: item.variant.baseCostCents,
+              retailPriceCents: item.variant.retailPriceCents,
+              platformProfitCents: calculatePlatformProfit(item.variant.retailPriceCents, item.variant.baseCostCents) * item.quantity,
+              roasterStatus: item.product.roaster ? "NEW" : "NOT_REQUIRED"
+            }))
+          }
         }
-      }
-    });
-    orderId = created.id;
-  } catch {
+      });
+      orderId = created.id;
+      orderPersisted = true;
+    } catch {
+      orderId = "demo-order";
+    }
+  } else {
     orderId = "demo-order";
   }
 
@@ -69,6 +76,13 @@ export async function POST(request: Request) {
     const response = NextResponse.redirect(`${appUrl}/checkout/success?demo=1&order=${orderId}`, { status: 303 });
     response.cookies.delete(cartCookieName);
     return response;
+  }
+
+  if (!orderPersisted) {
+    return NextResponse.json(
+      { error: "Checkout requires a reachable database so the order can be saved before payment." },
+      { status: 503 }
+    );
   }
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);

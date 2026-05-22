@@ -26,7 +26,33 @@ async function main() {
   if (cookie) {
     await check("/api/auth/me", { headers: { cookie } });
     await check("/api/admin/reports", { headers: { cookie } });
+    await check("/api/auth/logout", { method: "POST", headers: { cookie } });
   }
+
+  const cart = await check("/api/cart", {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      productSlug: "morning-ember-roast",
+      variantId: "morning-ember-roast-12 oz",
+      selectedGrind: "drip",
+      quantity: "1"
+    })
+  });
+  const cartCookie = cart.headers.get("set-cookie");
+  if (!cartCookie) throw new Error("Expected cart cookie after adding an item.");
+  await check("/api/checkout", {
+    method: "POST",
+    headers: {
+      "content-type": "application/x-www-form-urlencoded",
+      cookie: cartCookie.split(";")[0]
+    },
+    body: new URLSearchParams({
+      customerName: "Smoke Test",
+      customerEmail: "customer@espress.coffee",
+      shippingAddress: "123 Coffee Lane\nAsheville, NC 28801"
+    })
+  });
 
   await check("/api/stripe/webhook", {
     method: "POST",

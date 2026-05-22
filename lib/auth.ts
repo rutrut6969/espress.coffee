@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { demoUsers } from "@/lib/demo-data";
+import { hasUsableDatabaseUrl } from "@/lib/runtime";
 
 export const sessionCookieName = "espress_session";
 export const previewCookieName = "espress_preview_role";
@@ -67,6 +68,12 @@ export async function requireRole(roles: UserRole[]) {
 }
 
 export async function authenticate(email: string, password: string) {
+  if (!hasUsableDatabaseUrl()) {
+    const demo = demoUsers.find((user) => user.email === email.toLowerCase() && user.password === password);
+    if (!demo) return null;
+    return { id: demo.email, email: demo.email, name: demo.name, role: demo.role as UserRole };
+  }
+
   try {
     const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
     if (!user || user.status !== "ACTIVE") return null;

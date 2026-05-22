@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
+import { hasUsableDatabaseUrl } from "@/lib/runtime";
 
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
     const orderId = session.metadata?.orderId;
-    if (orderId) {
+    if (orderId && hasUsableDatabaseUrl()) {
       await prisma.order.update({
         where: { id: orderId },
         data: {
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
 
   if (event.type === "payment_intent.payment_failed") {
     const paymentIntent = event.data.object as Stripe.PaymentIntent;
-    await prisma.order.updateMany({
+    if (hasUsableDatabaseUrl()) await prisma.order.updateMany({
       where: { stripePaymentIntentId: paymentIntent.id },
       data: { paymentStatus: "FAILED" }
     }).catch(() => null);
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
   if (event.type === "charge.refunded") {
     const charge = event.data.object as Stripe.Charge;
     const paymentIntentId = typeof charge.payment_intent === "string" ? charge.payment_intent : charge.payment_intent?.id;
-    if (paymentIntentId) {
+    if (paymentIntentId && hasUsableDatabaseUrl()) {
       await prisma.order.updateMany({
         where: { stripePaymentIntentId: paymentIntentId },
         data: { paymentStatus: "REFUNDED", fulfillmentStatus: "REFUNDED" }

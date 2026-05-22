@@ -73,11 +73,17 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  flex-wrap: wrap;
+  padding: 10px 0;
 }
 
 .nav-links {
-  display: none;
+  order: 3;
+  width: 100%;
+  display: flex;
   gap: 18px;
+  overflow-x: auto;
+  padding-bottom: 4px;
   color: #5b5049;
   font-weight: 700;
 }
@@ -109,6 +115,13 @@ textarea {
   background: var(--espresso);
   color: white;
   box-shadow: 0 12px 24px rgba(58, 36, 22, 0.22);
+}
+
+.button:hover,
+.button-secondary:hover,
+.icon-button:hover,
+.portal-nav a:hover {
+  transform: translateY(-1px);
 }
 
 .button-secondary {
@@ -213,6 +226,19 @@ h3 {
   overflow: hidden;
 }
 
+.card,
+.button,
+.button-secondary,
+.icon-button,
+.portal-nav a {
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.card:hover {
+  border-color: rgba(201, 130, 59, 0.48);
+  box-shadow: 0 16px 34px rgba(31, 26, 23, 0.1);
+}
+
 .product-card {
   display: flex;
   flex-direction: column;
@@ -290,6 +316,11 @@ h3 {
   padding: 10px 12px;
   background: white;
   color: var(--charcoal);
+}
+
+.field textarea {
+  min-height: 108px;
+  resize: vertical;
 }
 
 .detail-layout {
@@ -387,8 +418,16 @@ th {
 }
 
 @media (min-width: 760px) {
+  .nav {
+    flex-wrap: nowrap;
+    padding: 0;
+  }
+
   .nav-links {
-    display: flex;
+    order: initial;
+    width: auto;
+    overflow: visible;
+    padding-bottom: 0;
   }
 
   .section {

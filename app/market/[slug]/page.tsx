@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import { ShoppingCart } from "lucide-react";
 import { ProductCard } from "@/components/product-card";
 import { getCatalogProducts, getProductBySlug } from "@/lib/catalog";
@@ -16,7 +17,7 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
     <main className="section">
       <div className="container detail-layout">
         <div>
-          <img className="detail-image" src={product.images[0]} alt={product.name} />
+          <Image className="detail-image" src={product.images[0]} alt={product.name} width={1200} height={1200} unoptimized />
           {profile ? (
             <section className="panel" style={{ marginTop: 18 }}>
               <span className="eyebrow">Coffee profile</span>
